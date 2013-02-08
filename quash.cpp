@@ -69,7 +69,7 @@ int main( int argc, char **argv, char **envp )
 					cerr << "File \"" << args[0] << "\" is not an executable." << endl;
 					exit( 0 );
 				}
-				if( ( execve( args[0], args, envp ) < 0 ) )
+				if( ( execve( args[0], args, environ ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
 					return EXIT_FAILURE;
@@ -89,7 +89,7 @@ int main( int argc, char **argv, char **envp )
 					cerr << "File \"" << &args[0][2] << "\" is not an executable." << endl;
 					exit( 0 );
 				}
-				if( ( execve( &args[0][2], args, envp ) < 0 ) )
+				if( ( execve( &args[0][2], args, environ ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
 					return EXIT_FAILURE;
@@ -112,7 +112,7 @@ int main( int argc, char **argv, char **envp )
 						cerr << "File found at \"" << cmd << "\" using PATH is not an executable." << endl;
 						break;
 					}
-					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, envp ) < 0 ) && errno != ENOENT )
+					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, eniron ) < 0 ) )
 					{
 						cerr << "Error executing command \"" << command << "\", ERROR #" << errno << "." << endl;
 						return EXIT_FAILURE;
