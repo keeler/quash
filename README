@@ -10,7 +10,7 @@ Requirement Checklist
 [X] Run executables without arguments.
 [X] Run executables with arguments.
 [ ] set command for HOME and PATH work properly.
-[~] exit and quit commands work properly.
+[X] exit and quit commands work properly.
 [ ] cd (with and without arguments) works properly.
 [X] PATH works properly. Give error messages when the executable is not found.
 [X] Child processes inherit the environment.

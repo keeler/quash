@@ -56,6 +56,7 @@ int main( int argc, char **argv, char **envp )
 		// If the user types exit or quit, break out of the infinite loop.
 		if( (string)args[0] == "exit" || (string)args[0] == "quit" )
 		{
+			freeArgv( args );
 			break;
 		}
 		// Fork a child to run the user's command
@@ -82,6 +83,7 @@ int main( int argc, char **argv, char **envp )
 			// Should only reach this if the command the user gave was not in
 			// one of the directories in PATH.
 			cerr << "Could not find command \"" << args[0] << "\"." << endl;
+			exit( 0 );	// Exit here avoids nested child processes.
 		}
 		else
 		{
