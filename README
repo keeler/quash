@@ -7,13 +7,13 @@ Written by Keeler Russell and Jeff Cailteux.
 =====================
 Requirement Checklist
 =====================
-[ ] Run executables without arguments.
-[ ] Run executables with arguments.
+[X] Run executables without arguments.
+[X] Run executables with arguments.
 [ ] set command for HOME and PATH work properly.
-[ ] exit and quit commands work properly.
+[~] exit and quit commands work properly.
 [ ] cd (with and without arguments) works properly.
-[ ] PATH works properly. Give error messages when the executable is not found.
-[ ] Child processes inherit the environment.
+[X] PATH works properly. Give error messages when the executable is not found.
+[X] Child processes inherit the environment.
 [ ] Allow background/foreground execution (using &).
 [ ] Printing/reporting of background processes, (including the jobs command).
 [ ] Allow file redirection (using > and <).
