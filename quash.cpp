@@ -12,9 +12,7 @@ using namespace std;
 #include <errno.h>
 #include <signal.h>
 
-// Globals parsed from system environment variables (passed to main via envp)
-string HOME;
-vector<string> PATH;
+extern char **environ;
 
 // Runs the command if it's a shell built-in (like cd, set, etc.). Returns
 // false if the command isn't a built-in.
@@ -31,20 +29,6 @@ void freeArgv( char **argv );
 
 int main( int argc, char **argv, char **envp )
 {
-	// Get HOME and PATH environment variables
-	for( unsigned int i = 0; envp[i]; i++ )
-	{
-		string str = envp[i];
-		if( str.substr( 0, 5 ) == "HOME=" )
-		{
-			HOME = str.substr( 5, string::npos );
-		}
-		else if( str.substr( 0, 5 ) == "PATH=" )
-		{
-			PATH = split( str.substr( 5, string::npos ), ':' );
-		}
-	}
-
 	while( 1 )
 	{
 		string command;
@@ -95,6 +79,7 @@ int main( int argc, char **argv, char **envp )
 			// PATH environment variables.
 			else
 			{
+				vector<string> PATH = split( getenv( "PATH" ), ':' );
 				for( unsigned int i = 0; i < PATH.size(); i++ )
 				{
 					// Note on the end: checking errno != ENOENT, an error which occurs when
@@ -137,16 +122,16 @@ bool runShellBuiltIn( char **args )
 	//environment variables are only changed during execution of quash
 	if( (string)args[0] == "set" )
 	{
-		if( (string)args[1] == "HOME" )
+		if( strncmp( args[1], "HOME=", 5 ) == 0 )
 		{
-			if( setenv( "HOME", args[2], 1 ) == -1 )
+			if( setenv( "HOME", &args[1][5], 1 ) == -1 )
 			{
 				cerr << "Error setting HOME,  ERROR #" << errno << "." << endl;	
 			}
 		}
-		else if( (string)args[1] == "PATH" )
+		else if( strncmp( args[1], "PATH=", 5 ) == 0 )
 		{
-			if( setenv( "PATH", args[2], 1 ) == -1 )
+			if( setenv( "PATH", &args[1][5], 1 ) == -1 )
 			{ 
 				cerr << "Error setting PATH,  ERROR #" << errno << "." << endl;	
 			}
@@ -175,17 +160,17 @@ bool runShellBuiltIn( char **args )
 		}
 		else
 		{
-			if( chdir( HOME.c_str() ) != 0 )
+			if( chdir( getenv( "HOME" ) ) != 0 )
 			{
-				cerr << "Couldn't change directory to \"" << HOME << "\", ERROR #" << errno << "." << endl;
+				cerr << "Couldn't change directory to \"" << getenv( "HOME" ) << "\", ERROR #" << errno << "." << endl;
 			}
 		}
 	}
 	else if( (string)args[0] == "kill" )
 	{
-		if( args[1]) //if theres a process id
+		if( args[1] ) //if theres a process id
 		{
-			if( kill( atoi( args[1] ), SIGKILL ) != 0)
+			if( kill( atoi( args[1] ), SIGKILL ) != 0 )
 			{
 				cerr << "Couldn't kill process " << args[1] << ", ERROR #" << errno << "." << endl;
 			}
