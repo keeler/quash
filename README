@@ -4,3 +4,23 @@ For EECS 678 at KU.
 
 Written by Keeler Russell and Jeff Cailteux.
 
+=====================
+Requirement Checklist
+=====================
+[ ] Run executables without arguments.
+[ ] Run executables with arguments.
+[ ] set command for HOME and PATH work properly.
+[ ] exit and quit commands work properly.
+[ ] cd (with and without arguments) works properly.
+[ ] PATH works properly. Give error messages when the executable is not found.
+[ ] Child processes inherit the environment.
+[ ] Allow background/foreground execution (using &).
+[ ] Printing/reporting of background processes, (including the jobs command).
+[ ] Allow file redirection (using > and <).
+[ ] Allow (1) pipe (using |).
+[ ] Supports reading commands from prompt and from file.
+[ ] Report.
+BONUS:
+[ ] Support multiple pipes in one command.
+[ ] kill command delivers signals to background processes.
+
