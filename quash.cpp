@@ -38,13 +38,21 @@ int main( int argc, char **argv, char **envp )
 		cout << "[" << get_current_dir_name() << "]" << " $ ";
 		// Get a line from the user.
 		getline( cin, command );
-		// Turn it into something we can pass to execve().
+
+		// If the user just hit enter (and nothing else), do nothing.
+		if( command.length() == 0 )
+		{
+			continue;
+		}
+
+		// Turn the command into something we can pass to execve().
 		char **args = createArgv( command );
 
 		// Run shell built-ins here. Returns false if the
 		// command wasn't a built-in like cd or set.
 		if( runShellBuiltIn( args ) )
 		{
+			freeArgv( args );
 			continue;
 		}
 
@@ -110,9 +118,9 @@ int main( int argc, char **argv, char **envp )
 					if( access( cmd.c_str(), X_OK ) != 0 )
 					{
 						cerr << "File found at \"" << cmd << "\" using PATH is not an executable." << endl;
-						break;
+						exit( 0 );
 					}
-					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, eniron ) < 0 ) )
+					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, environ ) < 0 ) )
 					{
 						cerr << "Error executing command \"" << command << "\", ERROR #" << errno << "." << endl;
 						return EXIT_FAILURE;
@@ -120,7 +128,7 @@ int main( int argc, char **argv, char **envp )
 				}
 			}
 
-			cerr << "File \"" << args[0] << "\" does not exist in PATH directories." << endl;
+			cerr << "File \"" << args[0] << "\" does not exist in any of the directories in PATH." << endl;
 			// Exit here avoids nested child processes if an exec failed.
 			exit( 0 );
 		}
