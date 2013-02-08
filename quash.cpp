@@ -59,6 +59,36 @@ int main( int argc, char **argv, char **envp )
 			freeArgv( args );
 			break;
 		}
+		else if( (string)args[0] == "cd" )
+		{
+			if( args[1] )	// If there is a directory to change to
+			{
+				// If it's an absolute path.
+				if( args[1][0] == '/' )
+				{
+					if( chdir( args[1] ) != 0 )
+					{
+						cerr << "Couldn't change directory to \"" << args[1] << "\", ERROR #" << errno << "." << endl;
+					}
+				}
+				else
+				{
+					string pwd = get_current_dir_name();
+					if( chdir( ( pwd + "/" + args[1] ).c_str() ) != 0 )
+					{
+						cerr << "Couldn't change directory to \"" << pwd + "/" + args[1] << "\", ERROR #" << errno << "." << endl;
+					}
+				}
+			}
+			else
+			{
+				if( chdir( HOME.c_str() ) != 0 )
+				{
+					cerr << "Couldn't change directory to \"" << HOME << "\", ERROR #" << errno << "." << endl;
+				}
+			}
+			continue;
+		}
 		// Fork a child to run the user's command
 		pid_t pid = fork();
 		if( pid < 0 )
