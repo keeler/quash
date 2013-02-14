@@ -16,6 +16,9 @@ using namespace std;
 string HOME;
 vector<string> PATH;
 
+// Runs the command if it's a shell built-in (like cd, set, etc.). Returns
+// false if the command isn't a built-in.
+bool runShellBuiltIn( char **args );
 // Split into a list of substrings based on the delimiter.
 // Like split in Perl or Python.
 vector<string> split( const string & str, char delimiter );
@@ -54,73 +57,11 @@ int main( int argc, char **argv, char **envp )
 		// Turn it into something we can pass to execve().
 		char **args = createArgv( command );
 
-		// If the user types exit or quit, break out of the infinite loop.
-		if( (string)args[0] == "exit" || (string)args[0] == "quit" )
+		// Run shell built-ins here. Returns false if the
+		// command wasn't a built-in like cd or set.
+		if( runShellBuiltIn( args ) )
 		{
-			freeArgv( args );
-			break;
-		}
-
-		//set for HOME and PATH
-		//environment variables are only changed during execution of quash
-		if( (string)args[0] == "set" )
-		{
-			if( (string)args[1] == "HOME" )
-			{
-				if( setenv( "HOME", args[2], 1 ) == -1 )
-				{
-					cerr << "Error setting HOME,  ERROR #" << errno << "." << endl;	
-				}
-			}
-			else if( (string)args[1] == "PATH" )
-			{
-				if( setenv( "PATH", args[2], 1 ) == -1 )
-				{ 
-					cerr << "Error setting PATH,  ERROR #" << errno << "." << endl;	
-				}
-
-			}
-		}
-		else if( (string)args[0] == "cd" )
-		{
-			if( args[1] )	// If there is a directory to change to
-			{
-				// If it's an absolute path.
-				if( args[1][0] == '/' )
-				{
-					if( chdir( args[1] ) != 0 )
-					{
-						cerr << "Couldn't change directory to \"" << args[1] << "\", ERROR #" << errno << "." << endl;
-					}
-				}
-				else
-				{
-					string pwd = get_current_dir_name();
-					if( chdir( ( pwd + "/" + args[1] ).c_str() ) != 0 )
-					{
-						cerr << "Couldn't change directory to \"" << pwd + "/" + args[1] << "\", ERROR #" << errno << "." << endl;
-					}
-				}
-			}
-			else
-			{
-				if( chdir( HOME.c_str() ) != 0 )
-				{
-					cerr << "Couldn't change directory to \"" << HOME << "\", ERROR #" << errno << "." << endl;
-				}
-			}
 			continue;
-		}
-		else if( (string)args[0] == "kill" )
-		{
-			if( args[1]) //if theres a process id
-			{
-				if( kill( atoi( args[1] ), SIGKILL ) != 0)
-				{
-					cerr << "Couldn't kill process " << args[1] << ", ERROR #" << errno << "." << endl;
-				}
-			}
-
 		}
 
 		// Fork a child to run the user's command
@@ -160,6 +101,80 @@ int main( int argc, char **argv, char **envp )
 	}
 
 	return 0;
+}
+
+bool runShellBuiltIn( char **args )
+{
+	// If the user types exit or quit, break out of the infinite loop.
+	if( (string)args[0] == "exit" || (string)args[0] == "quit" )
+	{
+		freeArgv( args );
+		exit( 0 );
+	}
+	//set for HOME and PATH
+	//environment variables are only changed during execution of quash
+	if( (string)args[0] == "set" )
+	{
+		if( (string)args[1] == "HOME" )
+		{
+			if( setenv( "HOME", args[2], 1 ) == -1 )
+			{
+				cerr << "Error setting HOME,  ERROR #" << errno << "." << endl;	
+			}
+		}
+		else if( (string)args[1] == "PATH" )
+		{
+			if( setenv( "PATH", args[2], 1 ) == -1 )
+			{ 
+				cerr << "Error setting PATH,  ERROR #" << errno << "." << endl;	
+			}
+		}
+	}
+	else if( (string)args[0] == "cd" )
+	{
+		if( args[1] )	// If there is a directory to change to
+		{
+			// If it's an absolute path.
+			if( args[1][0] == '/' )
+			{
+				if( chdir( args[1] ) != 0 )
+				{
+					cerr << "Couldn't change directory to \"" << args[1] << "\", ERROR #" << errno << "." << endl;
+				}
+			}
+			else
+			{
+				string pwd = get_current_dir_name();
+				if( chdir( ( pwd + "/" + args[1] ).c_str() ) != 0 )
+				{
+					cerr << "Couldn't change directory to \"" << pwd + "/" + args[1] << "\", ERROR #" << errno << "." << endl;
+				}
+			}
+		}
+		else
+		{
+			if( chdir( HOME.c_str() ) != 0 )
+			{
+				cerr << "Couldn't change directory to \"" << HOME << "\", ERROR #" << errno << "." << endl;
+			}
+		}
+	}
+	else if( (string)args[0] == "kill" )
+	{
+		if( args[1]) //if theres a process id
+		{
+			if( kill( atoi( args[1] ), SIGKILL ) != 0)
+			{
+				cerr << "Couldn't kill process " << args[1] << ", ERROR #" << errno << "." << endl;
+			}
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	return true;
 }
 
 vector<string> split( const string & str, char delimiter )
