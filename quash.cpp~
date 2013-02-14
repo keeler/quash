@@ -59,6 +59,7 @@ int main( int argc, char **argv, char **envp )
 			freeArgv( args );
 			break;
 		}
+<<<<<<< HEAD
 
     //set for HOME and PATH
     //environment variables are only changed during execution of quash
@@ -79,6 +80,7 @@ int main( int argc, char **argv, char **envp )
 
       }
     }
+=======
 		else if( (string)args[0] == "cd" )
 		{
 			if( args[1] )	// If there is a directory to change to
@@ -109,7 +111,7 @@ int main( int argc, char **argv, char **envp )
 			}
 			continue;
 		}
-
+>>>>>>> 333b528d8b6581c8d9799d255dd85451a149f183
 		// Fork a child to run the user's command
 		pid_t pid = fork();
 		if( pid < 0 )

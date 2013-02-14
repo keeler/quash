@@ -9,9 +9,15 @@ Requirement Checklist
 =====================
 [X] Run executables without arguments.
 [X] Run executables with arguments.
+<<<<<<< HEAD
 [X] set command for HOME and PATH work properly.
+[~] exit and quit commands work properly.
+[ ] cd (with and without arguments) works properly.
+=======
+[ ] set command for HOME and PATH work properly.
 [X] exit and quit commands work properly.
 [X] cd (with and without arguments) works properly.
+>>>>>>> 333b528d8b6581c8d9799d255dd85451a149f183
 [X] PATH works properly. Give error messages when the executable is not found.
 [X] Child processes inherit the environment.
 [ ] Allow background/foreground execution (using &).
