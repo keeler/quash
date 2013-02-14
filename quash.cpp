@@ -72,16 +72,38 @@ int main( int argc, char **argv, char **envp )
 		}
 		else if( pid == 0 )
 		{
+			// If it's an absolute path, just give that to exec().
+			if( args[0][0] == '/' )
+			{
+				if( ( execve( args[0], args, envp ) < 0 ) )
+				{
+					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
+					return EXIT_FAILURE;
+				}
+			}
+			// If the user puts a "./" in front of the command, just
+			// look in the present working directory.
+			else if( args[0][0] == '.' && args[0][1] == '/' )
+			{
+				if( ( execve( &args[0][2], args, envp ) < 0 ) )
+				{
+					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
+					return EXIT_FAILURE;
+				}
+			}
 			// Try to find the executable in one of the paths given by the
 			// PATH environment variables.
-			for( unsigned int i = 0; i < PATH.size(); i++ )
+			else
 			{
-				// Note on the end: checking errno != ENOENT, an error which occurs when
-				// the desired command isn't found
-				if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, envp ) < 0 ) && errno != ENOENT )
+				for( unsigned int i = 0; i < PATH.size(); i++ )
 				{
-					cerr << "Error executing command \"" << command << "\", ERROR #" << errno << "." << endl;
-					return EXIT_FAILURE;
+					// Note on the end: checking errno != ENOENT, an error which occurs when
+					// the desired command isn't found
+					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, envp ) < 0 ) && errno != ENOENT )
+					{
+						cerr << "Error executing command \"" << command << "\", ERROR #" << errno << "." << endl;
+						return EXIT_FAILURE;
+					}
 				}
 			}
 
