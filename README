@@ -22,5 +22,5 @@ Requirement Checklist
 [ ] Report.
 BONUS:
 [ ] Support multiple pipes in one command.
-[ ] kill command delivers signals to background processes.
+[X] kill command delivers signals to background processes.
 
