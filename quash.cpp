@@ -59,6 +59,26 @@ int main( int argc, char **argv, char **envp )
 			freeArgv( args );
 			break;
 		}
+
+    //set for HOME and PATH
+    //environment variables are only changed during execution of quash
+    if( (string)args[0] == "set")
+    {
+      if( (string)args[1] == "HOME")
+      {
+        if( setenv("HOME", args[2], 1) == -1)
+        {
+					cerr << "Error setting HOME,  ERROR #" << errno << "." << endl;	
+        }
+      }else if ( (string)args[1] == "PATH")
+      {
+        if( setenv("PATH", args[2], 1) == -1)
+        { 
+					cerr << "Error setting PATH,  ERROR #" << errno << "." << endl;	
+        }
+
+      }
+    }
 		// Fork a child to run the user's command
 		pid_t pid = fork();
 		if( pid < 0 )
