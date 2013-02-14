@@ -115,7 +115,7 @@ int main( int argc, char **argv, char **envp )
 		{
 			if( args[1]) //if theres a process id
 			{
-				if( kill( (int)args[1], SIGKILL) != 0)
+				if( kill( atoi( args[1] ), SIGKILL ) != 0)
 				{
 					cerr << "Couldn't kill process " << args[1] << ", ERROR #" << errno << "." << endl;
 				}
