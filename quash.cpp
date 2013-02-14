@@ -10,6 +10,7 @@ using namespace std;
 #include <cstdlib>
 #include <sys/wait.h>
 #include <errno.h>
+#include <signal.h>
 
 // Globals parsed from system environment variables (passed to main via envp)
 string HOME;
@@ -109,6 +110,17 @@ int main( int argc, char **argv, char **envp )
 			}
 			continue;
 		}
+    else if ( (string)args[0] == "kill")
+    {
+      if( args[1]) //if theres a process id
+      {
+        if( kill( (int)args[1], SIGKILL) != 0)
+        {
+					cerr << "Couldn't kill process " << args[1] << ", ERROR #" << errno << "." << endl;
+        }
+      }
+
+    }
 
 		// Fork a child to run the user's command
 		pid_t pid = fork();
