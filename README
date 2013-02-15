@@ -19,7 +19,7 @@ Requirement Checklist
 [ ] Allow file redirection (using > and <).
 [ ] Allow (1) pipe (using |).
 [~] Supports reading commands from prompt and from file.
-[ ] Report.
+[~] Report.
 BONUS:
 [ ] Support multiple pipes in one command.
 [X] kill command delivers signals to background processes.
