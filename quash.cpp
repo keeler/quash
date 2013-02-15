@@ -217,7 +217,7 @@ bool runShellBuiltIn( char **args )
 	//will be used for report
   else if( (string)args[0] == "help")
   {
-      cout<<" Quash 1.0 \n";
+      cout<<"\n\nQuash 1.0 \n";
       cout<<"Written by Keeler Russell and Jeff Cailteux\n";
       cout<<"For EECS 678\n\n";
       cout<<"Help Menu\n\n";
@@ -230,6 +230,7 @@ bool runShellBuiltIn( char **args )
 			cout<<"set <environment variable>\n";
 			cout<<"<  <text file>\n";
 
+			cout<<endl;
   }
 	else
 	{
