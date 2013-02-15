@@ -203,6 +203,34 @@ bool runShellBuiltIn( char **args )
 			}
 		}
 	}
+	//Load commands from a file
+	else if ( (string)args[0] == "<")
+	{
+		if( args[1] ) //if theres a file to load from
+		{
+			
+		}		
+
+	}	
+	//Help menu for Quash
+	//Lists off all the functions Quash can do
+	//will be used for report
+  else if( (string)args[0] == "help")
+  {
+      cout<<" Quash 1.0 \n";
+      cout<<"Written by Keeler Russell and Jeff Cailteux\n";
+      cout<<"For EECS 678\n\n";
+      cout<<"Help Menu\n\n";
+
+			cout<<"cd <directory>\n";
+			cout<<"exit\n";
+			cout<<"jobs\n";			
+			cout<<"kill <process id>\n";
+			cout<<"quit\n";
+			cout<<"set <environment variable>\n";
+			cout<<"<  <text file>\n";
+
+  }
 	else
 	{
 		return false;
