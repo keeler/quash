@@ -59,6 +59,16 @@ int main( int argc, char **argv, char **envp )
 			// If it's an absolute path, just give that to exec().
 			if( args[0][0] == '/' )
 			{
+				if( access( args[0], F_OK ) != 0 )
+				{
+					cerr << "File \"" << args[0] << "\" does not exist." << endl;
+					exit( 0 );
+				}
+				if( access( args[0], X_OK ) != 0 )
+				{
+					cerr << "File \"" << args[0] << "\" is not an executable." << endl;
+					exit( 0 );
+				}
 				if( ( execve( args[0], args, envp ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
@@ -69,6 +79,16 @@ int main( int argc, char **argv, char **envp )
 			// look in the present working directory.
 			else if( args[0][0] == '.' && args[0][1] == '/' )
 			{
+				if( access( &args[0][2], F_OK ) != 0 )
+				{
+					cerr << "File \"" << &args[0][2] << "\" does not exist in current directory." << endl;
+					exit( 0 );
+				}
+				if( access( args[0], X_OK ) != 0 )
+				{
+					cerr << "File \"" << &args[0][2] << "\" is not an executable." << endl;
+					exit( 0 );
+				}
 				if( ( execve( &args[0][2], args, envp ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
@@ -82,8 +102,16 @@ int main( int argc, char **argv, char **envp )
 				vector<string> PATH = split( getenv( "PATH" ), ':' );
 				for( unsigned int i = 0; i < PATH.size(); i++ )
 				{
-					// Note on the end: checking errno != ENOENT, an error which occurs when
-					// the desired command isn't found
+					string cmd = PATH[i] + "/" + args[0];
+					if( access( cmd.c_str(), F_OK ) != 0 )
+					{
+						continue;
+					}
+					if( access( cmd.c_str(), X_OK ) != 0 )
+					{
+						cerr << "File found at \"" << cmd << "\" using PATH is not an executable." << endl;
+						break;
+					}
 					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, envp ) < 0 ) && errno != ENOENT )
 					{
 						cerr << "Error executing command \"" << command << "\", ERROR #" << errno << "." << endl;
@@ -92,10 +120,9 @@ int main( int argc, char **argv, char **envp )
 				}
 			}
 
-			// Should only reach this if the command the user gave was not in
-			// one of the directories in PATH.
-			cerr << "Could not find command \"" << args[0] << "\"." << endl;
-			exit( 0 );	// Exit here avoids nested child processes.
+			cerr << "File \"" << args[0] << "\" does not exist in PATH directories." << endl;
+			// Exit here avoids nested child processes if an exec failed.
+			exit( 0 );
 		}
 		else
 		{
