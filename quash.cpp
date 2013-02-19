@@ -243,6 +243,11 @@ bool runShellBuiltIn( char **args )
           take_command(s,0);
         }
       }
+      else
+      {
+        cerr << "File " << args[1] << " could not be found" << endl;
+      }
+
       infile.close();
 		}		
 
