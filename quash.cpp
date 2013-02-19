@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -26,6 +27,8 @@ string trim( const string & str, const string & whitespace );
 char **createArgv( const string & commandAndArgs );
 // Frees the argument list created by createArgv().
 void freeArgv( char **argv );
+//take command methods
+void take_command(string command, int status);
 
 int main( int argc, char **argv, char **envp )
 {
@@ -38,11 +41,20 @@ int main( int argc, char **argv, char **envp )
 		cout << "[" << get_current_dir_name() << "]" << " $ ";
 		// Get a line from the user.
 		getline( cin, command );
+    //send to function
+    take_command(command, status);
+  }
+  return 0;
+}
 
+void take_command(string command, int status)
+{
 		// If the user just hit enter (and nothing else), do nothing.
 		if( command.length() == 0 )
 		{
-			continue;
+      //no longer in loop, can return here
+			//continue;
+      return;
 		}
 
 		// Turn the command into something we can pass to execve().
@@ -53,7 +65,8 @@ int main( int argc, char **argv, char **envp )
 		if( runShellBuiltIn( args ) )
 		{
 			freeArgv( args );
-			continue;
+			//continue;
+      return;
 		}
 
 		// Fork a child to run the user's command
@@ -80,8 +93,10 @@ int main( int argc, char **argv, char **envp )
 				if( ( execve( args[0], args, environ ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
-					return EXIT_FAILURE;
-				}
+					//return EXIT_FAILURE;
+				  //dont know how to handle that
+          return;
+        }
 			}
 			// If the user puts a "./" in front of the command, just
 			// look in the present working directory.
@@ -100,8 +115,10 @@ int main( int argc, char **argv, char **envp )
 				if( ( execve( &args[0][2], args, environ ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << args[0] << "\", ERROR #" << errno << "." << endl;
-					return EXIT_FAILURE;
-				}
+          //return EXIT_FAILURE;
+				  //dont know how to handle that
+          return;
+        }
 			}
 			// Try to find the executable in one of the paths given by the
 			// PATH environment variables.
@@ -123,8 +140,10 @@ int main( int argc, char **argv, char **envp )
 					if( ( execve( ( PATH[i] + "/" + args[0] ).c_str(), args, environ ) < 0 ) )
 					{
 						cerr << "Error executing command \"" << command << "\", ERROR #" << errno << "." << endl;
-						return EXIT_FAILURE;
-					}
+						//return EXIT_FAILURE;
+					  //dont know how to handle that
+            return;
+          }
 				}
 			}
 
@@ -140,10 +159,8 @@ int main( int argc, char **argv, char **envp )
 
 		// Clean up to avoid memory leaks.
 		freeArgv( args );
-	}
-
-	return 0;
 }
+
 
 bool runShellBuiltIn( char **args )
 {
@@ -216,7 +233,17 @@ bool runShellBuiltIn( char **args )
 	{
 		if( args[1] ) //if theres a file to load from
 		{
-			
+      ifstream infile;
+      infile.open(args[1]);
+      if(infile)//if file exists
+      {
+        string s;
+        while(!infile.eof()){
+          getline(infile,s); 
+          take_command(s,0);
+        }
+      }
+      infile.close();
 		}		
 
 	}	
