@@ -240,7 +240,6 @@ bool runShellBuiltIn( char **args )
         string s;
         while(!infile.eof()){
           getline(infile,s);
-          cout << s << endl;
           take_command(s,0);
         }
       }
