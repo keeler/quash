@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "Command.hpp"
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -68,30 +69,57 @@ char **createArgv( const string & commandAndArgs )
 	return argv;
 }
 
-// Frees the argument list created by createArgv()
-void freeArgv( char **argv )
-{
-	for( unsigned int i = 0; argv[i]; i++ )
-	{
-		delete [] argv[i];
-	}
-
-	delete [] argv;
-}
-
 // Gets a command from the given input stream and turns it into an argv array.
-char **getCommand( std::istream & is )
+Command getCommand( std::istream & is )
 {
+	Command cmd;
 	string command;
 	getline( is, command );
 
-	char **argv = NULL;
-	if( command.length() > 0 )
+	vector<string> tokens = split( command, ' ' );
+	for( unsigned int i = 0; i < tokens.size(); i++ )
 	{
-		argv = createArgv( command );
+		if( tokens[i] == "<" )
+		{
+			if( i + 1 < tokens.size() )
+			{
+				cmd.inputFilename = tokens[++i];
+			}
+			else
+			{
+				cerr << "Error parsing input command: \"<\" must be followed by an input filename." << endl;
+				return cmd;
+			}
+		}
+		else if( tokens[i] == ">" )
+		{
+			if( i + 1 < tokens.size() )
+			{
+				cmd.outputFilename = tokens[++i];
+			}
+			else
+			{
+				cerr << "Error parsing input command: \">\" must be followed by an output filename." << endl;
+				return cmd;
+			}
+		}
+		else if( tokens[i] == "&" )
+		{
+			cmd.executeInBackground = true;
+		}
+		else
+		{
+			cmd.command += ( " " + tokens[i] );
+		}
 	}
 
-	return argv;
+	cmd.command = trim( cmd.command );
+	if( cmd.command.length() > 0 )
+	{
+		cmd.argv = createArgv( cmd.command );
+	}
+
+	return cmd;
 }
 
 // Split str into tokens based on delimiter, like split in Perl or Python

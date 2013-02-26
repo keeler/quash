@@ -17,7 +17,7 @@ using namespace std;
 extern char **environ;
 
 // Execute command given by argv array. Handles shell builtins like cd or set.
-int executeCommand( char **argv );
+int executeCommand( const Command & command );
 
 int main( int argc, char **argv, char **envp )
 {
@@ -25,54 +25,48 @@ int main( int argc, char **argv, char **envp )
 
 	while( 1 )
 	{
-		string command;
-
 		// Display a prompt.
 		cout << "[" << get_current_dir_name() << "]$ ";
-		char **args = getCommand( cin );
-		if( args == NULL )
+		Command command = getCommand( cin );
+		if( command.argv == NULL )
 		{
 			continue;
 		}
 
-		executeCommand( args );
-
-		// Clean up to avoid memory leaks.
-		freeArgv( args );
+		executeCommand( command );
 	}
 
 	return 0;
 }
 
-int executeCommand( char **argv )
+int executeCommand( const Command & command )
 {
-	if( (string)argv[0] == "exit" || (string)argv[0] == "quit" )
+	if( (string)command.argv[0] == "exit" || (string)command.argv[0] == "quit" )
 	{
-		quit( argv );
+		quit( command.argv );
 	}
-	if( (string)argv[0] == "set" )
+	if( (string)command.argv[0] == "set" )
 	{
-		set( argv );
+		set( command.argv );
 		return EXIT_SUCCESS;
 	}
-	else if( (string)argv[0] == "cd" )
+	else if( (string)command.argv[0] == "cd" )
 	{
-		cd( argv );
+		cd( command.argv );
 		return EXIT_SUCCESS;
 	}
-	else if( (string)argv[0] == "kill" )
+	else if( (string)command.argv[0] == "kill" )
 	{
-		kill( argv );
+		kill( command.argv );
 		return EXIT_SUCCESS;
 	}
-	else if( (string)argv[0] == "help")
+	else if( (string)command.argv[0] == "help")
 	{
-		help( argv );
+		help( command.argv );
 		return EXIT_SUCCESS;
 	}
-	
-	int status;
 
+	int status;
 	// Fork a child to run the user's command
 	pid_t pid = fork();
 	if( pid < 0 )
@@ -82,30 +76,30 @@ int executeCommand( char **argv )
 	else if( pid == 0 )
 	{
 		// If it's an absolute path, just give that to exec().
-		if( argv[0][0] == '/' )
+		if( command.argv[0][0] == '/' )
 		{
 			// Returns 0 if file exists and is an executable.
-			if( executableExists( argv[0] ) != 0 )
+			if( executableExists( command.argv[0] ) != 0 )
 			{
 				exit( 0 );
 			}
-			if( ( execve( argv[0], argv, environ ) < 0 ) )
+			if( ( execve( command.argv[0], command.argv, environ ) < 0 ) )
 			{
-				cerr << "Error executing command \"" << argv[0] << "\", ERROR #" << errno << "." << endl;
+				cerr << "Error executing command \"" << command.argv[0] << "\", ERROR #" << errno << "." << endl;
 				return EXIT_FAILURE;
 			}
 		}
 		// If the user puts a "./" in front of the command, just
 		// look in the present working directory.
-		else if( argv[0][0] == '.' && argv[0][1] == '/' )
+		else if( command.argv[0][0] == '.' && command.argv[0][1] == '/' )
 		{
-			if( executableExists( &argv[0][2] ) != 0 )
+			if( executableExists( &command.argv[0][2] ) != 0 )
 			{
 				exit( 0 );
 			}
-			if( ( execve( &argv[0][2], argv, environ ) < 0 ) )
+			if( ( execve( &command.argv[0][2], command.argv, environ ) < 0 ) )
 			{
-				cerr << "Error executing command \"" << argv[0] << "\", ERROR #" << errno << "." << endl;
+				cerr << "Error executing command \"" << command.argv[0] << "\", ERROR #" << errno << "." << endl;
 				return EXIT_FAILURE;
 			}
 		}
@@ -116,7 +110,7 @@ int executeCommand( char **argv )
 			vector<string> PATH = split( getenv( "PATH" ), ':' );
 			for( unsigned int i = 0; i < PATH.size(); i++ )
 			{
-				string cmd = PATH[i] + "/" + argv[0];
+				string cmd = PATH[i] + "/" + command.argv[0];
 				if( access( cmd.c_str(), F_OK ) != 0 )
 				{
 					continue;
@@ -126,7 +120,7 @@ int executeCommand( char **argv )
 					cerr << "File found at \"" << cmd << "\" using PATH is not an executable." << endl;
 					exit( 0 );
 				}
-				if( ( execve( ( PATH[i] + "/" + argv[0] ).c_str(), argv, environ ) < 0 ) )
+				if( ( execve( ( PATH[i] + "/" + command.argv[0] ).c_str(), command.argv, environ ) < 0 ) )
 				{
 					cerr << "Error executing command \"" << cmd << "\", ERROR #" << errno << "." << endl;
 					return EXIT_FAILURE;
@@ -134,7 +128,7 @@ int executeCommand( char **argv )
 			}
 		}
 		
-		cerr << "File \"" << argv[0] << "\" does not exist in any of the directories in PATH." << endl;
+		cerr << "File \"" << command.argv[0] << "\" does not exist in any of the directories in PATH." << endl;
 		// Exit here avoids nested child processes if an exec failed.
 		exit( 0 );
 	}

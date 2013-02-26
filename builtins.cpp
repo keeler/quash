@@ -1,5 +1,4 @@
 #include "builtins.hpp"
-#include "utils.hpp"
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -71,7 +70,6 @@ void set( char **argv )
 
 void quit( char **argv )
 {
-	freeArgv( argv );
 	exit( 0 );
 }
 

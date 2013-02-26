@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include "Command.hpp"
 
 // Wrappers for system calls
 // Helper for access() system call
@@ -16,17 +17,15 @@ void initZombieReaping();
 // Argument manipulation
 // Creates an argument list that can be passed to execve()
 char **createArgv( const std::string & commandAndArgs );
-// Frees the argument list created by createArgv()
-void freeArgv( char **argv );
 // Gets a command from the given input stream and turns
 // it into an argv array.
-char **getCommand( std::istream & is );
+Command getCommand( std::istream & is );
 
 // Text-munging utilities
 // Split str into tokens based on delimiter, like split in Perl or Python
 std::vector<std::string> split( const std::string & str, char delimiter );
 // Trim whitespace from beginning and end of string
-std::string trim( const std::string & str, const std::string & whitespace );
+std::string trim( const std::string & str, const std::string & whitespace = " \t\n" );
 
 #endif
 
