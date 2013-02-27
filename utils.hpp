@@ -6,8 +6,12 @@
 #include <string>
 #include "Command.hpp"
 
+// Make the list of running background jobs an extern global so it can be used
+// in multiple source files.
+extern std::vector<Command> backgroundJobs;
+
 // Wrappers for system calls
-// Helper for access() system call
+// Helper for multiple sequential access() system calls.
 int executableExists( const std::string & filename );
 // SIGCHLD signal handler to reap zombie processes.
 void sigchldHandler( int signal );
