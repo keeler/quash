@@ -15,6 +15,7 @@ using namespace std;
 #include <signal.h>
 
 extern char **environ;
+unsigned int nextJobId = 0;
 
 // Execute command given by argv array. Handles shell builtins like cd or set.
 int executeCommand( const Command & command );
@@ -43,7 +44,7 @@ int executeCommand( const Command & command )
 {
 	if( (string)command.argv[0] == "exit" || (string)command.argv[0] == "quit" )
 	{
-		quit( command.argv );
+		exit( 0 );
 	}
 	if( (string)command.argv[0] == "set" )
 	{
@@ -53,6 +54,11 @@ int executeCommand( const Command & command )
 	else if( (string)command.argv[0] == "cd" )
 	{
 		cd( command.argv );
+		return EXIT_SUCCESS;
+	}
+	else if( (string)command.argv[0] == "jobs" )
+	{
+		jobs();
 		return EXIT_SUCCESS;
 	}
 	else if( (string)command.argv[0] == "kill" )
@@ -75,6 +81,17 @@ int executeCommand( const Command & command )
 	}
 	else if( pid == 0 )
 	{
+		if( command.executeInBackground )
+		{
+			// Put child in new process group.
+			setpgid( 0, 0 );
+			// As with bash, disable input from terminal, but leave output enabled.
+			close( STDIN_FILENO );
+			// For now, don't let background jobs output to stdout or stderr.
+			close( STDOUT_FILENO );
+			close( STDERR_FILENO );
+
+		}
 		// If it's an absolute path, just give that to exec().
 		if( command.argv[0][0] == '/' )
 		{
@@ -134,8 +151,19 @@ int executeCommand( const Command & command )
 	}
 	else
 	{
-		// Parent waits for child to finish.
-		wait( &status );
+		if( command.executeInBackground )
+		{
+			Command job = command;
+			job.jobId = nextJobId++;
+			job.pid = pid;
+			backgroundJobs.push_back( job );
+			cout << "[" << job.jobId << "] " << job.pid << " running in backround." << endl;
+		}
+		else
+		{
+			// Parent waits for child to finish.
+			wait( &status );
+		}
 	}
 
 	return EXIT_SUCCESS;

@@ -10,6 +10,8 @@
 #include <errno.h>
 using namespace std;
 
+vector<Command> backgroundJobs;
+
 // Helper for access() system call. Returns -1 if
 // file not found, 1 if not an executable, and 0
 // if the file was found and is an executable.
@@ -32,7 +34,22 @@ int executableExists( const std::string & filename )
 // SIGCHLD signal handler to reap zombie processes.
 void sigchldHandler( int signal )
 {
-	while( waitpid( -1, NULL, WNOHANG ) > 0 );
+	pid_t pid;
+	while( ( pid = waitpid( -1, NULL, WNOHANG ) ) > 0 )
+	{
+		// Remove background job that just finished from the list.
+		// Note that backgroundJobs is an extern global.
+		for( unsigned int i = 0; i < backgroundJobs.size(); i++ )
+		{
+			if( backgroundJobs[i].pid == pid )
+			{
+				Command cmd = backgroundJobs[i];
+				cout << "[" << cmd.jobId << "] " << cmd.pid << " finished " << cmd.command << endl;
+				backgroundJobs.erase( backgroundJobs.begin() + i );
+				break;
+			}
+		}
+	}
 }
 
 // Set up the above SIGCHLD handler so it will go into action.
@@ -113,9 +130,9 @@ Command getCommand( std::istream & is )
 		}
 	}
 
-	cmd.command = trim( cmd.command );
 	if( cmd.command.length() > 0 )
 	{
+		cmd.command = trim( cmd.command );
 		cmd.argv = createArgv( cmd.command );
 	}
 

@@ -1,4 +1,5 @@
 #include "builtins.hpp"
+#include "utils.hpp"
 #include <iostream>
 #include <string>
 #include <cstring>
@@ -68,9 +69,13 @@ void set( char **argv )
 	}
 }
 
-void quit( char **argv )
+void jobs()
 {
-	exit( 0 );
+	cout << "[JOBID]\tPID\tCOMMAND" << endl;
+	for( unsigned int i = 0; i < backgroundJobs.size(); i++ )
+	{
+		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command << endl;
+	}
 }
 
 void kill( char **argv )
