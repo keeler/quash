@@ -71,7 +71,10 @@ void set( char **argv )
 
 void jobs()
 {
-	cout << "[JOBID]\tPID\tCOMMAND" << endl;
+	if( backgroundJobs.size() > 0 )
+	{
+		cout << "[JOBID]\tPID\tCOMMAND" << endl;
+	}
 	for( unsigned int i = 0; i < backgroundJobs.size(); i++ )
 	{
 		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command << endl;
