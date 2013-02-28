@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <cstring>
+#include <cstdio>
 #include "utils.hpp"
 #include "builtins.hpp"
 using namespace std;
@@ -85,13 +86,39 @@ int executeCommand( const Command & command )
 		{
 			// Put child in new process group.
 			setpgid( 0, 0 );
-			// As with bash, disable input from terminal, but leave output enabled.
-			close( STDIN_FILENO );
-			// For now, don't let background jobs output to stdout or stderr.
-			close( STDOUT_FILENO );
-			close( STDERR_FILENO );
-
+			// As with bash, disable input from terminal, but leave output
+			// output enabled. UNLESS there is an input file.
+			if( command.inputFilename.length() == 0 )
+			{
+				close( STDIN_FILENO );
+			}
 		}
+
+		if( command.inputFilename.length() > 0 )
+		{
+			FILE *ifile = fopen( command.inputFilename.c_str(), "r" );
+			if( ifile == NULL )
+			{
+				cerr << "Couldn't open \"" << command.inputFilename << "\"." << endl;
+				exit( EXIT_FAILURE );
+			}
+
+			dup2( fileno( ifile ), STDIN_FILENO );
+			fclose( ifile );
+		}
+		if( command.outputFilename.length() > 0 )
+		{
+			FILE *ofile = fopen( command.outputFilename.c_str(), "w" );
+			if( ofile == NULL )
+			{
+				cerr << "Couldn't open \"" << command.outputFilename << "\"." << endl;
+				exit( EXIT_FAILURE );
+			}
+
+			dup2( fileno( ofile ), STDOUT_FILENO );
+			fclose( ofile );
+		}
+
 		// If it's an absolute path, just give that to exec().
 		if( command.argv[0][0] == '/' )
 		{
