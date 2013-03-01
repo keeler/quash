@@ -68,6 +68,67 @@ void initZombieReaping()
 	}
 }
 
+// Run execve() on the given command, searching through $PATH if needed.
+int execute( char **argv )
+{
+	// If it's an absolute path, just give that to exec().
+	if( argv[0][0] == '/' )
+	{
+		// Returns 0 if the file exists and is an executable.
+		if( executableExists( argv[0] ) != 0 )
+		{
+			return EXIT_FAILURE;
+		}
+		if( execve( argv[0], argv, environ ) < 0 )
+		{
+			cerr << "Error executing \"" << argv[0] << "\", errno = " << errno << "." << endl;
+			return EXIT_FAILURE;
+		}
+	}
+	// If the user puts a "./" in front of the command, just look in the
+	// current working directory for the executable.
+	else if( strncmp( argv[0], "./", 2 ) == 0 )
+	{
+		// Returns 0 if the file exists and is an executable.
+		if( executableExists( &argv[0][2] ) != 0 )
+		{
+			return EXIT_FAILURE;
+		}
+		if( execve( &argv[0][2], argv, environ ) < 0 )
+		{
+			cerr << "Error executing \"" << &argv[0][2] << "\", errno = " << errno << "." << endl;
+			return EXIT_FAILURE;
+		}
+	}
+	// Try to find the executable in one of the paths given by the PATH
+	// environment variable.
+	else
+	{
+		vector<string> PATH = split( getenv( "PATH" ), ':' );
+		for( unsigned int i = 0; i < PATH.size(); i++ )
+		{
+			string cmd = PATH[i] + "/" + argv[0];
+			if( access( cmd.c_str(), F_OK ) != 0 )
+			{
+				continue;
+			}
+			if( access( cmd.c_str(), X_OK ) != 0 )
+			{
+				cerr << "File found at \"" << cmd << "\" using PATH is not an executable." << endl;
+				return EXIT_FAILURE;
+			}
+			if( execve( cmd.c_str(), argv, environ ) < 0 )
+			{
+				cerr << "Error executing \"" << cmd << "\", errno = " << errno << "." << endl;
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
+	cerr << "Executable named \"" << argv[0] << "\" does not exist in any of the directories in PATH." << endl;
+	return EXIT_FAILURE;
+}
+
 // Creates an argument list that can be passed to execve()
 char **createArgv( const string & commandAndArgs )
 {

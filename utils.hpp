@@ -17,6 +17,8 @@ int executableExists( const std::string & filename );
 void sigchldHandler( int signal );
 // Set up the above SIGCHLD handler so it will go into action.
 void initZombieReaping();
+// Run execve() for the given command, searching through $PATH if needed.
+int execute( char **argv );
 
 // Argument manipulation
 // Creates an argument list that can be passed to execve()
