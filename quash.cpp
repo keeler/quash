@@ -114,7 +114,11 @@ int executeCommandList( const vector<Command> & commandList )
 	for( unsigned int i = 0; i < commandList.size() - 1; i++ )
 	{
 		// Create the pipe.
-		pipe( pipefd );
+		if( pipe( pipefd ) < 0 )
+		{
+			cerr << "Could not open pipe." << endl;
+			return EXIT_FAILURE;
+		}
 
 		pid = fork();
 		if( pid < 0 )
