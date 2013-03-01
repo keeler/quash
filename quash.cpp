@@ -250,12 +250,12 @@ int executeCommandList( const vector<Command> & commandList )
 		}
 	}
 
-	// Clean up the pipes.
+	// Clean up the pipes, but check if they are valid file descriptors first.
 	if( fcntl( pipefd[0], F_GETFD ) != -1 || errno != EBADF )
 	{
 		close( pipefd[0] );
 	}
-	if( fcntl( pipefd[0], F_GETFD ) != -1 || errno != EBADF )
+	if( fcntl( pipefd[1], F_GETFD ) != -1 || errno != EBADF )
 	{
 		close( pipefd[1] );
 	}
