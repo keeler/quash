@@ -13,6 +13,7 @@ using namespace std;
 #include <sys/wait.h>
 #include <errno.h>
 #include <signal.h>
+#include <fcntl.h>
 
 extern char **environ;
 // Assign this to background jobs.
@@ -32,7 +33,9 @@ int main( int argc, char **argv, char **envp )
 		// Display a prompt if not running a script from stdin.
 		if( isatty( STDIN_FILENO ) )
 		{
-			cout << "[" << get_current_dir_name() << "]$ ";
+			char *dirName = get_current_dir_name();
+			cout << "[" << dirName << "]$ ";
+			free( dirName );
 		}
 
 		vector<Command> commandList = getInput( cin );
@@ -109,6 +112,7 @@ int executeCommandList( const vector<Command> & commandList )
 	// Start with input from STDIN.
 	int inputfd = STDIN_FILENO;
 	int pipefd[2];
+	memset( pipefd, 255, sizeof( int ) * 2 );
 	// If there is more than one command in the list, i.e. a series of commands
 	// intended to be piped successively, this for loop handles that.
 	for( unsigned int i = 0; i < commandList.size() - 1; i++ )
@@ -247,8 +251,14 @@ int executeCommandList( const vector<Command> & commandList )
 	}
 
 	// Clean up the pipes.
-	close( pipefd[0] );
-	close( pipefd[1] );
+	if( fcntl( pipefd[0], F_GETFD ) != -1 || errno != EBADF )
+	{
+		close( pipefd[0] );
+	}
+	if( fcntl( pipefd[0], F_GETFD ) != -1 || errno != EBADF )
+	{
+		close( pipefd[1] );
+	}
 	// Make sure STDIN and STDOUT go back to normal in case the pipes screwed something up.
 	dup2( stdin_saved, STDIN_FILENO );
 	dup2( stdout_saved, STDOUT_FILENO );
