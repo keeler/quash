@@ -5,7 +5,6 @@
 #include <cstring>
 #include <cstdio>
 #include "utils.hpp"
-#include "builtins.hpp"
 using namespace std;
 
 // System call includes
@@ -36,6 +35,18 @@ int main( int argc, char **argv, char **envp )
 		if( commandList.size() == 0 )
 		{
 			continue;
+		}
+		else if( containsShellBuiltin( commandList ) )
+		{
+			if( commandList.size() == 1 )
+			{
+				executeCommandList( commandList );
+			}
+			else
+			{
+				cerr << "Piping with shell builtins is undefined. Type help for list of shell builtins." << endl;
+				continue;
+			}
 		}
 		else
 		{
@@ -75,7 +86,7 @@ int executeCommandList( const vector<Command> & commandList )
 	}
 	else if( (string)command.argv[0] == "help")
 	{
-		help( command.argv );
+		help();
 		return EXIT_SUCCESS;
 	}
 

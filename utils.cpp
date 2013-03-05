@@ -366,7 +366,7 @@ void kill( char **argv )
 	}
 }
 
-void help( char **argv )
+void help()
 {
 	cout << "\n\nQuash 1.0" << endl;
 	cout << "Written by Keeler Russell and Jeff Cailteux" << endl;
@@ -380,5 +380,25 @@ void help( char **argv )
 	cout << "kill <process id>" << endl;
 	cout << "quit" << endl;
 	cout << "set <evironment variable>" << endl << endl;
+}
+
+bool containsShellBuiltin( const std::vector<Command> & commandList )
+{
+	for( unsigned int i = 0; i < commandList.size(); i++ )
+	{
+		Command cmd = commandList[i];
+		if( strcmp( cmd.argv[0], "exit" ) == 0 ||
+			strcmp( cmd.argv[0], "quit" ) == 0 ||
+			strcmp( cmd.argv[0], "cd" ) == 0 ||
+			strcmp( cmd.argv[0], "jobs" ) == 0 ||
+			strcmp( cmd.argv[0], "kill" ) == 0 ||
+			strcmp( cmd.argv[0], "set" ) == 0 ||
+			strcmp( cmd.argv[0], "help" ) == 0 )
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
