@@ -51,5 +51,12 @@ std::vector<std::string> split( const std::string & str, char delimiter );
 // Trim whitespace from beginning and end of string
 std::string trim( const std::string & str, const std::string & whitespace = " \t\n" );
 
+// Shell builtins
+void cd( char **argv );
+void set( char **argv );
+void jobs();
+void kill( char **argv );
+void help( char **argv );
+
 #endif
 
