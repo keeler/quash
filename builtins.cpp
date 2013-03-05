@@ -77,7 +77,7 @@ void jobs()
 	}
 	for( unsigned int i = 0; i < backgroundJobs.size(); i++ )
 	{
-		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command << endl;
+		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command.rawString << endl;
 	}
 }
 

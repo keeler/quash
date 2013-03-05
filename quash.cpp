@@ -20,6 +20,8 @@ unsigned int nextJobId = 0;
 
 // Execute command given by argv array. Handles shell builtins like cd or set.
 int executeCommand( const Command & command );
+// Executes a list of commands, piping each to the next successively.
+int executeCommandList( const vector<Command> & commandList );
 
 int main( int argc, char **argv, char **envp )
 {
@@ -29,20 +31,24 @@ int main( int argc, char **argv, char **envp )
 	{
 		// Display a prompt.
 		cout << "[" << get_current_dir_name() << "]$ ";
-		Command command = getCommand( cin );
-		if( command.argv == NULL )
+		cin.clear();
+		vector<Command> commandList = getInput( cin );
+		if( commandList.size() == 0 )
 		{
 			continue;
 		}
-
-		executeCommand( command );
+		else
+		{
+			executeCommandList( commandList );
+		}
 	}
 
 	return 0;
 }
 
-int executeCommand( const Command & command )
+int executeCommandList( const vector<Command> & commandList )
 {
+	Command command = commandList[0];
 	if( (string)command.argv[0] == "exit" || (string)command.argv[0] == "quit" )
 	{
 		exit( 0 );
@@ -73,12 +79,83 @@ int executeCommand( const Command & command )
 		return EXIT_SUCCESS;
 	}
 
+	int stdin_saved = dup( STDIN_FILENO );
+	int stdout_saved = dup( STDOUT_FILENO );
+
+	pid_t pid;
 	int status;
-	// Fork a child to run the user's command
-	pid_t pid = fork();
+	int inputfd = STDIN_FILENO;
+	int pipefd[2];
+	for( unsigned int i = 0; i < commandList.size() - 1; i++ )
+	{
+		pipe( pipefd );
+
+		pid = fork();
+		if( pid < 0 )
+		{
+			cerr << "Fork failed." << endl;
+		}
+		else if( pid == 0 )
+		{
+			if( inputfd != 0 )
+			{
+				dup2( inputfd, STDIN_FILENO );
+				close( inputfd );
+			}
+			dup2( pipefd[1], STDOUT_FILENO );
+			close( pipefd[1] );
+
+			if( commandList[i].executeInBackground )
+			{
+				// Put child in new process group.
+				setpgid( 0, 0 );
+			}
+
+			if( redirectStdIn( commandList[i].inputFilename ) != 0 )
+			{
+				exit( EXIT_FAILURE );
+			}
+			if( redirectStdOut( commandList[i].outputFilename ) != 0 )
+			{
+				exit( EXIT_FAILURE );
+			}
+
+			exit( execute( commandList[i].argv ) );
+		}
+		else
+		{
+			if( commandList[i].executeInBackground )
+			{
+				Job job;
+				job.command = commandList[i];
+				job.jobId = nextJobId++;
+				job.pid = pid;
+				backgroundJobs.push_back( job );
+				cout << "[" << job.jobId << "] " << job.pid << " running in backround." << endl;
+			}
+			else
+			{
+				// Parent waits for child to finish.
+				wait( &status );
+			}
+		}
+
+		close( pipefd[1] );
+		inputfd = pipefd[0];
+	}
+
+	if( inputfd != 0 )
+	{
+		dup2( inputfd, STDIN_FILENO );
+	}
+
+	// The final command in the pipe.
+	command = commandList[commandList.size() - 1];
+	pid = fork();
 	if( pid < 0 )
 	{
 		cerr << "Fork failed." << endl;
+		exit( 0 );
 	}
 	else if( pid == 0 )
 	{
@@ -86,46 +163,25 @@ int executeCommand( const Command & command )
 		{
 			// Put child in new process group.
 			setpgid( 0, 0 );
-			// As with bash, disable input from terminal, but leave output
-			// output enabled. UNLESS there is an input file.
-			if( command.inputFilename.length() == 0 )
-			{
-				close( STDIN_FILENO );
-			}
 		}
 
-		if( command.inputFilename.length() > 0 )
+		if( redirectStdIn( command.inputFilename ) != 0 )
 		{
-			FILE *ifile = fopen( command.inputFilename.c_str(), "r" );
-			if( ifile == NULL )
-			{
-				cerr << "Couldn't open \"" << command.inputFilename << "\"." << endl;
-				exit( EXIT_FAILURE );
-			}
-
-			dup2( fileno( ifile ), STDIN_FILENO );
-			fclose( ifile );
+			exit( EXIT_FAILURE );
 		}
-		if( command.outputFilename.length() > 0 )
+		if( redirectStdOut( command.outputFilename ) != 0 )
 		{
-			FILE *ofile = fopen( command.outputFilename.c_str(), "w" );
-			if( ofile == NULL )
-			{
-				cerr << "Couldn't open \"" << command.outputFilename << "\"." << endl;
-				exit( EXIT_FAILURE );
-			}
-
-			dup2( fileno( ofile ), STDOUT_FILENO );
-			fclose( ofile );
+			exit( EXIT_FAILURE );
 		}
-
+	
 		exit( execute( command.argv ) );
 	}
 	else
 	{
 		if( command.executeInBackground )
 		{
-			Command job = command;
+			Job job;
+			job.command = command;
 			job.jobId = nextJobId++;
 			job.pid = pid;
 			backgroundJobs.push_back( job );
@@ -137,6 +193,11 @@ int executeCommand( const Command & command )
 			wait( &status );
 		}
 	}
+
+	close( pipefd[0] );
+	close( pipefd[1] );
+	dup2( stdin_saved, STDIN_FILENO );
+	dup2( stdout_saved, STDOUT_FILENO );
 
 	return EXIT_SUCCESS;
 }

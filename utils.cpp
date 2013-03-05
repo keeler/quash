@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstring>
+#include <cstdio>
 #include <unistd.h>
 #include <cstdlib>
 #include <signal.h>
@@ -10,7 +11,7 @@
 #include <errno.h>
 using namespace std;
 
-vector<Command> backgroundJobs;
+vector<Job> backgroundJobs;
 
 // Helper for access() system call. Returns -1 if
 // file not found, 1 if not an executable, and 0
@@ -43,8 +44,8 @@ void sigchldHandler( int signal )
 		{
 			if( backgroundJobs[i].pid == pid )
 			{
-				Command cmd = backgroundJobs[i];
-				cout << "[" << cmd.jobId << "] " << cmd.pid << " finished " << cmd.command << endl;
+				Job job = backgroundJobs[i];
+				cout << "[" << job.jobId << "] " << job.pid << " finished " << job.command.rawString << endl;
 				backgroundJobs.erase( backgroundJobs.begin() + i );
 				break;
 			}
@@ -68,7 +69,7 @@ void initZombieReaping()
 	}
 }
 
-// Run execve() on the given command, searching through $PATH if needed.
+// Run execve() on the given command, searching through $PATH if needed. 
 int execute( char **argv )
 {
 	// If it's an absolute path, just give that to exec().
@@ -129,6 +130,42 @@ int execute( char **argv )
 	return EXIT_FAILURE;
 }
 
+int redirectStdIn( const string & filename )
+{
+	if( filename.length() > 0 )
+	{
+		FILE *ifile = fopen( filename.c_str(), "r" );
+		if( ifile == NULL )
+		{
+			cerr << "Couldn't open \"" << filename << "\"." << endl;
+			return -1;
+		}
+
+		dup2( fileno( ifile ), STDIN_FILENO );
+		fclose( ifile );
+	}
+
+	return 0;
+}
+
+int redirectStdOut( const string & filename )
+{	
+	if( filename.length() > 0 )
+	{
+		FILE *ofile = fopen( filename.c_str(), "w" );
+		if( ofile == NULL )
+		{
+			cerr << "Couldn't open \"" << filename << "\"." << endl;
+			return -1;
+		}
+
+		dup2( fileno( ofile ), STDOUT_FILENO );
+		fclose( ofile );
+	}
+
+	return 0;
+}
+
 // Creates an argument list that can be passed to execve()
 char **createArgv( const string & commandAndArgs )
 {
@@ -148,56 +185,68 @@ char **createArgv( const string & commandAndArgs )
 }
 
 // Gets a command from the given input stream and turns it into an argv array.
-Command getCommand( std::istream & is )
+vector<Command> getInput( std::istream & is )
 {
-	Command cmd;
-	string command;
-	getline( is, command );
+	string rawInput;
+	getline( is, rawInput );
+	vector<Command> result;
+	vector<Command> emptyVector;	// For error returns;
 
-	vector<string> tokens = split( command, ' ' );
-	for( unsigned int i = 0; i < tokens.size(); i++ )
+	if( rawInput.length() == 0 )
 	{
-		if( tokens[i] == "<" )
+		return result;
+	}
+
+	vector<string> subCommands = split( rawInput, '|' );
+	for( unsigned int i = 0; i < subCommands.size(); i++ )
+	{
+		Command cmd;
+		cmd.rawString = subCommands[i];
+
+		vector<string> tokens = split( subCommands[i], ' ' );
+		string parseString;
+		for( unsigned int j = 0; j < tokens.size(); j++ )
 		{
-			if( i + 1 < tokens.size() )
+			if( tokens[j] == "<" )
 			{
-				cmd.inputFilename = tokens[++i];
+				if( j + 1 < tokens.size() )
+				{
+					cmd.inputFilename = tokens[++j];
+				}
+				else
+				{
+					cerr << "Error parsing input command: \"<\" must be followed by an input filename." << endl;
+					return emptyVector;
+				}
+			}
+			else if( tokens[j] == ">" )
+			{
+				if( j + 1 < tokens.size() )
+				{
+					cmd.outputFilename = tokens[++j];
+				}
+				else
+				{
+					cerr << "Error parsing input command: \">\" must be followed by an output filename." << endl;
+					return emptyVector;
+				}
+			}
+			else if( tokens[j] == "&" )
+			{
+				cmd.executeInBackground = true;
 			}
 			else
 			{
-				cerr << "Error parsing input command: \"<\" must be followed by an input filename." << endl;
-				return cmd;
+				parseString += ( " " + tokens[j] );
 			}
 		}
-		else if( tokens[i] == ">" )
-		{
-			if( i + 1 < tokens.size() )
-			{
-				cmd.outputFilename = tokens[++i];
-			}
-			else
-			{
-				cerr << "Error parsing input command: \">\" must be followed by an output filename." << endl;
-				return cmd;
-			}
-		}
-		else if( tokens[i] == "&" )
-		{
-			cmd.executeInBackground = true;
-		}
-		else
-		{
-			cmd.command += ( " " + tokens[i] );
-		}
+
+		parseString = trim( parseString );
+		cmd.argv = createArgv( parseString );
+		result.push_back( cmd );
 	}
 
-	if( cmd.command.length() > 0 )
-	{
-		cmd.command = trim( cmd.command );
-		cmd.argv = createArgv( cmd.command );
-	}
-
-	return cmd;
+	return result;
 }
 
 // Split str into tokens based on delimiter, like split in Perl or Python

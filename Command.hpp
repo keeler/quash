@@ -7,34 +7,28 @@
 
 struct Command
 {
-	std::string 	command;				// Command sent to Quash.
+	std::string 	rawString;				// Command sent to Quash.
 	std::string		inputFilename;			// Input file (for redirected stdin).
 	std::string		outputFilename;			// Ouput file (for redirected stdout).
 	char			**argv;					// ARGV string to pass to execve().
 	bool			executeInBackground;	// Whether to run in background.
-	unsigned int	jobId;					// Job ID assigned when job put into background.
-	pid_t			pid;					// Process ID of job.
 
 	// Default constructor
 	Command() :
-		command( "" ),
+		rawString( "" ),
 		inputFilename( "" ),
 		outputFilename( "" ),
 		argv( NULL ),
-		executeInBackground( false ),
-		jobId( 0 ),
-		pid( 0 )
+		executeInBackground( false )
 	{
 	}
 
 	// Copy constructor
 	Command( const Command & that ) :
-		command( that.command ),
+		rawString( that.rawString ),
 		inputFilename( that.inputFilename ),
 		outputFilename( that.outputFilename ),
-		executeInBackground( that.executeInBackground ),
-		jobId( that.jobId ),
-		pid( that.pid )
+		executeInBackground( that.executeInBackground )
 	{
 		if( that.argv != NULL )
 		{
@@ -72,12 +66,10 @@ struct Command
 	{
 		if( this != &that )
 		{
-			command = that.command;
+			rawString = that.rawString;
 			inputFilename = that.inputFilename;
 			outputFilename = that.outputFilename;
 			executeInBackground = that.executeInBackground;
-			jobId = that.jobId;
-			pid = that.pid;
 
 			if( that.argv != NULL )
 			{
