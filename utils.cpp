@@ -1,6 +1,7 @@
 #include "utils.hpp"
 #include "Command.hpp"
 #include <iostream>
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <cstring>
@@ -205,6 +206,11 @@ vector<Command> getInput( std::istream & is )
 		rawInput.erase( rawInput.find( "&" ), 1 );
 	}
 
+	// Put spaces around file redirect so tokenizer doesn't get confused.
+	// "|" and "&" are not an issue as the code is.
+	rawInput = replaceAll( rawInput, "<", " < " );
+	rawInput = replaceAll( rawInput, ">", " > " );
+
 	vector<string> subCommands = split( rawInput, '|' );
 	for( unsigned int i = 0; i < subCommands.size(); i++ )
 	{
@@ -282,6 +288,25 @@ string trim( const string & str, const string & whitespace )
 	int range = end - begin + 1;
 
 	return str.substr( begin, range );
+}
+
+std::string replaceAll( const string & str, const string & before, const string & after )
+{
+	string result;
+	string::const_iterator curr = str.begin();
+	string::const_iterator end = str.end();
+	string::const_iterator next = search( curr, end, before.begin(), before.end() );
+
+	while( next != end )
+	{
+		result.append( curr, next );
+		result.append( after );
+		curr = next + before.size();
+		next = search( curr, end, before.begin(), before.end() );
+	}
+
+	result.append( curr, next );
+	return result;
 }
 
 void cd( char **argv )

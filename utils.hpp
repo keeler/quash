@@ -50,6 +50,8 @@ bool runIfShellBuiltin( const std::vector<Command> & commandList );
 std::vector<std::string> split( const std::string & str, char delimiter );
 // Trim whitespace from beginning and end of string
 std::string trim( const std::string & str, const std::string & whitespace = " \t\n" );
+// Replace all occurrences of "this
+std::string replaceAll( const std::string & str, const std::string & before, const std::string & after  );
 
 // Shell builtins
 void cd( char **argv );
