@@ -8,7 +8,7 @@
 
 struct Job
 {
-	Command			command;
+	std::string		command;
 	unsigned int	jobId;
 	pid_t			pid;
 };

@@ -138,16 +138,7 @@ int executeCommandList( const vector<Command> & commandList )
 		}
 		else
 		{
-			if( commandList[i].executeInBackground )
-			{
-				Job job;
-				job.command = commandList[i];
-				job.jobId = nextJobId++;
-				job.pid = pid;
-				backgroundJobs.push_back( job );
-				cout << "[" << job.jobId << "] " << job.pid << " running in backround." << endl;
-			}
-			else
+			if( !commandList[i].executeInBackground )
 			{
 				// Parent waits for child to finish.
 				wait( &status );
@@ -195,11 +186,15 @@ int executeCommandList( const vector<Command> & commandList )
 		if( command.executeInBackground )
 		{
 			Job job;
-			job.command = command;
+			job.command += commandList[0].rawString;
+			for( unsigned int i = 1; i < commandList.size(); i++ )
+			{
+				job.command += ( " | " + commandList[i].rawString );
+			}
 			job.jobId = nextJobId++;
 			job.pid = pid;
 			backgroundJobs.push_back( job );
-			cout << "[" << job.jobId << "] " << job.pid << " running in backround." << endl;
+			cout << "[" << job.jobId << "] " << job.pid << " running in background." << endl;
 		}
 		else
 		{

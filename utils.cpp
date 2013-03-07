@@ -46,7 +46,7 @@ void sigchldHandler( int signal )
 			if( backgroundJobs[i].pid == pid )
 			{
 				Job job = backgroundJobs[i];
-				cout << "[" << job.jobId << "] " << job.pid << " finished " << job.command.rawString << endl;
+				cout << endl << "[" << job.jobId << "] " << job.pid << " finished " << job.command << endl;
 				backgroundJobs.erase( backgroundJobs.begin() + i );
 				break;
 			}
@@ -198,11 +198,18 @@ vector<Command> getInput( std::istream & is )
 		return result;
 	}
 
+	bool runInBackground = false;
+	if( rawInput.find( "&" ) != string::npos )
+	{
+		runInBackground = true;
+		rawInput.erase( rawInput.find( "&" ), 1 );
+	}
+
 	vector<string> subCommands = split( rawInput, '|' );
 	for( unsigned int i = 0; i < subCommands.size(); i++ )
 	{
 		Command cmd;
-		cmd.rawString = subCommands[i];
+		cmd.rawString = trim( subCommands[i] );
 
 		vector<string> tokens = split( subCommands[i], ' ' );
 		string parseString;
@@ -232,10 +239,6 @@ vector<Command> getInput( std::istream & is )
 					return emptyVector;
 				}
 			}
-			else if( tokens[j] == "&" )
-			{
-				cmd.executeInBackground = true;
-			}
 			else
 			{
 				parseString += ( " " + tokens[j] );
@@ -244,6 +247,9 @@ vector<Command> getInput( std::istream & is )
 
 		parseString = trim( parseString );
 		cmd.argv = createArgv( parseString );
+
+		cmd.executeInBackground = runInBackground;
+
 		result.push_back( cmd );
 	}
 
@@ -346,7 +352,7 @@ void jobs()
 	}
 	for( unsigned int i = 0; i < backgroundJobs.size(); i++ )
 	{
-		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command.rawString << endl;
+		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command << endl;
 	}
 }
 
