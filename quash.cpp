@@ -26,10 +26,13 @@ int main( int argc, char **argv, char **envp )
 {
 	initZombieReaping();
 
-	while( 1 )
+	while( cin.good() )
 	{
-		// Display a prompt.
-		cout << "[" << get_current_dir_name() << "]$ ";
+		// Display a prompt if not running a script from stdin.
+		if( isatty( STDIN_FILENO ) )
+		{
+			cout << "[" << get_current_dir_name() << "]$ ";
+		}
 		cin.clear();
 		vector<Command> commandList = getInput( cin );
 		if( commandList.size() == 0 )
