@@ -368,18 +368,37 @@ void kill( char **argv )
 
 void help()
 {
-	cout << "\n\nQuash 1.0" << endl;
-	cout << "Written by Keeler Russell and Jeff Cailteux" << endl;
-	cout << "For EECS 678" << endl << endl;
+	cout << "################################################" << endl;
+	cout << "#                  Quash 1.0                   #" << endl;
+	cout << "#                Quite A Shell!                #" << endl;
+	cout << "#            (KU EECS 678 Project 1)           #" << endl;
+	cout << "#                                              #" << endl;
+	cout << "#                   Authors:                   #" << endl;
+	cout << "#                Keeler Russell                #" << endl;
+	cout << "#                Jeff Cailteux                 #" << endl;
+	cout << "################################################" << endl << endl;
 
-	cout << "Help Menu" << endl << endl;
+	cout << "USAGE" << endl;
+	cout << "-----" << endl;
+	cout << "Interactive Mode: simply run the executable with no arguments." << endl;
+	cout << "Script Mode: run the executable, and pipe your script to it with" << endl;
+	cout << "             stdin. E.g. quash < scriptname.sh." << endl << endl;
 
-	cout << "cd <directory>" << endl;
-	cout << "exit" << endl;
-	cout << "jobs" << endl;
-	cout << "kill <process id>" << endl;
-	cout << "quit" << endl;
-	cout << "set <evironment variable>" << endl << endl;
+	cout << "SHELL BUILTINS" << endl;
+	cout << "--------------" << endl;
+	cout << "1) cd <directory>" << endl;
+	cout << "    - If no argument given, changes to $HOME." << endl;
+	cout << "2) exit" << endl;
+	cout << "3) quit" << endl;
+	cout << "4) jobs" << endl;
+	cout << "    - Prints list of jobs currently running in the background." << endl;
+	cout << "5) kill <process id>" << endl;
+	cout << "    - Sends SIGKILL signal to process with the given process ID." << endl;
+	cout << "6) set <evironment variable>" << endl;
+	cout << "    - Only two environment variables recognized: HOME and PATH." << endl;
+	cout << "    - E.g. set HOME=/home/johndoe" << endl;
+	cout << "    - E.g. set PATH=/bin:/usr/bin" << endl;
+	cout << "    - Directories for PATH must be separated by colons." << endl;
 }
 
 bool containsShellBuiltin( const std::vector<Command> & commandList )
