@@ -96,6 +96,8 @@ int executeCommandList( const vector<Command> & commandList )
 	int stdin_saved = dup( STDIN_FILENO );
 	int stdout_saved = dup( STDOUT_FILENO );
 
+	pid_t firstChildPid = 0;
+
 	pid_t pid;
 	int status;
 	int inputfd = STDIN_FILENO;
@@ -138,6 +140,11 @@ int executeCommandList( const vector<Command> & commandList )
 		}
 		else
 		{
+			if( i == 0 )
+			{
+				firstChildPid = pid;
+			}
+			cout << pid << endl;
 			if( !commandList[i].executeInBackground )
 			{
 				// Parent waits for child to finish.
@@ -183,6 +190,10 @@ int executeCommandList( const vector<Command> & commandList )
 	}
 	else
 	{
+		if( commandList.size() == 1 )
+		{
+			firstChildPid = pid;
+		}
 		if( command.executeInBackground )
 		{
 			Job job;
@@ -192,7 +203,7 @@ int executeCommandList( const vector<Command> & commandList )
 				job.command += ( " | " + commandList[i].rawString );
 			}
 			job.jobId = nextJobId++;
-			job.pid = pid;
+			job.pid = firstChildPid;
 			backgroundJobs.push_back( job );
 			cout << "[" << job.jobId << "] " << job.pid << " running in background." << endl;
 		}

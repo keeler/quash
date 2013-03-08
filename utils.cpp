@@ -391,7 +391,7 @@ void kill( char **argv )
 		return;
 	}
 
-	if( kill( atoi( argv[1] ), SIGKILL ) != 0 )
+	if( kill( atoi( argv[1] ), SIGINT ) != 0 )
 	{
 		cerr << "Couldn't kill process " << argv[1] << ", ERROR #" << errno << "." << endl;
 	}
