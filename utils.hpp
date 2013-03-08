@@ -6,18 +6,22 @@
 #include <string>
 #include "Command.hpp"
 
+// A job that will go in the list of background jobs.
 struct Job
 {
-	std::string		command;
-	unsigned int	jobId;
-	pid_t			pid;
+	std::string		command;	// E.g. du /home/username | grep eecs | sort --numeric --reverse | head
+	unsigned int	jobId;		// Unique, assigned by quash.
+	pid_t			pid;		// Pid of first child process forked when running the job.
 };
 
 // Make the list of running background jobs an extern global so it can be used
 // in multiple source files.
 extern std::vector<Job> backgroundJobs;
 
-// Wrappers for system calls
+///////////////////////////////
+// Wrappers for system calls //
+///////////////////////////////
+
 // Helper for multiple sequential access() system calls.
 int executableExists( const std::string & filename );
 // SIGCHLD signal handler to reap zombie processes.
@@ -34,7 +38,10 @@ int redirectStdIn( const std::string & filename );
 // string.
 int redirectStdOut( const std::string & filename );
 
-// Argument manipulation
+///////////////////////////
+// Argument manipulation //
+///////////////////////////
+
 // Creates an argument list that can be passed to execve()
 char **createArgv( const std::string & commandAndArgs );
 // Gets a command from the given input stream and turns
@@ -45,15 +52,21 @@ std::vector<Command> getInput( std::istream & is );
 // true if it ran, false if it didn't.
 bool runIfShellBuiltin( const std::vector<Command> & commandList );
 
-// Text-munging utilities
+////////////////////////////
+// Text-munging utilities //
+////////////////////////////
+
 // Split str into tokens based on delimiter, like split in Perl or Python
 std::vector<std::string> split( const std::string & str, char delimiter );
 // Trim whitespace from beginning and end of string
 std::string trim( const std::string & str, const std::string & whitespace = " \t\n" );
-// Replace all occurrences of "this
+// Replace all occurrences of before with after in the string str.
 std::string replaceAll( const std::string & str, const std::string & before, const std::string & after  );
 
-// Shell builtins
+////////////////////
+// Shell builtins //
+////////////////////
+
 void cd( char **argv );
 void set( char **argv );
 void jobs();

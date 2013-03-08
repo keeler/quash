@@ -15,9 +15,8 @@ using namespace std;
 
 vector<Job> backgroundJobs;
 
-// Helper for access() system call. Returns -1 if
-// file not found, 1 if not an executable, and 0
-// if the file was found and is an executable.
+// Helper for access() system call. Returns -1 if file not found, 1 if not an
+// executable, and 0 if the file was found and is an executable.
 int executableExists( const std::string & filename )
 {
 	if( access( filename.c_str(), F_OK ) != 0 )
@@ -56,6 +55,7 @@ void sigchldHandler( int signal )
 }
 
 // Set up the above SIGCHLD handler so it will go into action.
+// This should be called at Quash startup.
 void initZombieReaping()
 {
 	struct sigaction sa;
@@ -110,16 +110,20 @@ int execute( char **argv )
 		vector<string> PATH = split( getenv( "PATH" ), ':' );
 		for( unsigned int i = 0; i < PATH.size(); i++ )
 		{
+			// Next place to look.
 			string cmd = PATH[i] + "/" + argv[0];
+			// See if the file exists, if not, try the next PATH directory.
 			if( access( cmd.c_str(), F_OK ) != 0 )
 			{
 				continue;
 			}
+			// If it's found, but not an executable, we can't run it!
 			if( access( cmd.c_str(), X_OK ) != 0 )
 			{
 				cerr << "File found at \"" << cmd << "\" using PATH is not an executable." << endl;
 				return EXIT_FAILURE;
 			}
+			// If it's found and it's an executable, throw it exec()'s way.
 			if( execve( cmd.c_str(), argv, environ ) < 0 )
 			{
 				cerr << "Error executing \"" << cmd << "\", errno = " << errno << "." << endl;
@@ -128,14 +132,18 @@ int execute( char **argv )
 		}
 	}
 
+	// If all else above failed, say so.
 	cerr << "Executable named \"" << argv[0] << "\" does not exist in any of the directories in PATH." << endl;
 	return EXIT_FAILURE;
 }
 
+// Redirects STDIN to read from the given filename, if it exists.
+// Only redirects if filename is a non-empty string.
 int redirectStdIn( const string & filename )
 {
 	if( filename.length() > 0 )
 	{
+		// Open and error check.
 		FILE *ifile = fopen( filename.c_str(), "r" );
 		if( ifile == NULL )
 		{
@@ -143,6 +151,7 @@ int redirectStdIn( const string & filename )
 			return -1;
 		}
 
+		// Rename STDIN.
 		dup2( fileno( ifile ), STDIN_FILENO );
 		fclose( ifile );
 	}
@@ -150,10 +159,13 @@ int redirectStdIn( const string & filename )
 	return 0;
 }
 
+// Redirect STDOUT to write to given filename. File will be created if it
+// doesn't exist. Only redirects if filename is a non-empty string.
 int redirectStdOut( const string & filename )
 {	
 	if( filename.length() > 0 )
 	{
+		// Open and error check.
 		FILE *ofile = fopen( filename.c_str(), "w" );
 		if( ofile == NULL )
 		{
@@ -161,6 +173,7 @@ int redirectStdOut( const string & filename )
 			return -1;
 		}
 
+		// Rename STDOUT.
 		dup2( fileno( ofile ), STDOUT_FILENO );
 		fclose( ofile );
 	}
@@ -171,17 +184,19 @@ int redirectStdOut( const string & filename )
 // Creates an argument list that can be passed to execve()
 char **createArgv( const string & commandAndArgs )
 {
+	// Tokenize using space as the delimiter.
 	vector<string> arguments = split( commandAndArgs, ' ' );
 	unsigned int argc = arguments.size();
 
 	char **argv = new char*[argc + 1];	// Need +1 for extra NULL for execve()
 	for( unsigned int i = 0; i < argc; i++ )
 	{
+		// Copy the string object as a C style string.
 		argv[i] = new char[arguments[i].length() + 1];
 		strncpy( argv[i], arguments[i].c_str(), arguments[i].length() );
-		argv[i][arguments[i].length()] = '\0';
+		argv[i][arguments[i].length()] = '\0';	// End with NULL terminator.
 	}
-	argv[argc] = NULL;
+	argv[argc] = NULL;	// exec() will be unhappy if NULL isn't at the end of argv.
 
 	return argv;
 }
@@ -189,16 +204,21 @@ char **createArgv( const string & commandAndArgs )
 // Gets a command from the given input stream and turns it into an argv array.
 vector<Command> getInput( std::istream & is )
 {
-	string rawInput;
-	getline( is, rawInput );
 	vector<Command> result;
 	vector<Command> emptyVector;	// For error returns;
 
+	// Get a line from the input stream.
+	string rawInput;
+	getline( is, rawInput );
+
+	// If the input was empty, nothing to do.
 	if( rawInput.length() == 0 )
 	{
-		return result;
+		return emptyVector;
 	}
 
+	// If a '&' character is found in the command, remember that we want to run
+	// this in the background, and remove the '&' from the string.
 	bool runInBackground = false;
 	if( rawInput.find( "&" ) != string::npos )
 	{
@@ -211,16 +231,22 @@ vector<Command> getInput( std::istream & is )
 	rawInput = replaceAll( rawInput, "<", " < " );
 	rawInput = replaceAll( rawInput, ">", " > " );
 
+	// Split into separate commands for handling multiple pipes.
 	vector<string> subCommands = split( rawInput, '|' );
 	for( unsigned int i = 0; i < subCommands.size(); i++ )
 	{
 		Command cmd;
 		cmd.rawString = trim( subCommands[i] );
 
+		// Now, for each string in the chain of piped commands, tokenize using
+		// space as the delimiter, and parse the tokens into a Command struct.
 		vector<string> tokens = split( subCommands[i], ' ' );
-		string parseString;
+		// String to pass to createArgv(), doesn't have redirects because exec()
+		// doesn't understand those.
+		string argvString;
 		for( unsigned int j = 0; j < tokens.size(); j++ )
 		{
+			// Handle input redirection filename.
 			if( tokens[j] == "<" )
 			{
 				if( j + 1 < tokens.size() )
@@ -233,6 +259,7 @@ vector<Command> getInput( std::istream & is )
 					return emptyVector;
 				}
 			}
+			// Handle output redirection filename.
 			else if( tokens[j] == ">" )
 			{
 				if( j + 1 < tokens.size() )
@@ -245,15 +272,18 @@ vector<Command> getInput( std::istream & is )
 					return emptyVector;
 				}
 			}
+			// If it's not an I/O redirect, tack it on to what we'll turn into
+			// an argv array for exec().
 			else
 			{
-				parseString += ( " " + tokens[j] );
+				argvString += ( " " + tokens[j] );
 			}
 		}
 
-		parseString = trim( parseString );
-		cmd.argv = createArgv( parseString );
-
+		// Create the argv array, and mark the command to execute in the
+		// background or not based on whether '&' was found at the beginning of
+		// this function.
+		cmd.argv = createArgv( trim( argvString ) );
 		cmd.executeInBackground = runInBackground;
 
 		result.push_back( cmd );
@@ -265,12 +295,14 @@ vector<Command> getInput( std::istream & is )
 // Split str into tokens based on delimiter, like split in Perl or Python
 vector<string> split( const string & str, char delimiter )
 {
-	stringstream ss( str );
+	stringstream ss( str );	// Turn str into a stringstream
 	string token;
 	vector<string> tokens;
 
+	// Read the string stream up to the next delimiter, and throw that in token.
 	while( getline( ss, token, delimiter ) )
 	{
+		// If the token isn't the empty string, put it into the list.
 		if( !token.empty() )
 		{
 			tokens.push_back( token );
@@ -297,14 +329,16 @@ std::string replaceAll( const string & str, const string & before, const string 
 	string::const_iterator end = str.end();
 	string::const_iterator next = search( curr, end, before.begin(), before.end() );
 
+	// While the end of the string hasn't been reached.
 	while( next != end )
 	{
-		result.append( curr, next );
-		result.append( after );
-		curr = next + before.size();
+		result.append( curr, next );	// Append everything up to the 'before' that was found.
+		result.append( after );			// Append the after string.
+		curr = next + before.size();	// Get ready to loop again.
 		next = search( curr, end, before.begin(), before.end() );
 	}
 
+	// Wrap up and return.
 	result.append( curr, next );
 	return result;
 }
@@ -322,6 +356,8 @@ void cd( char **argv )
 				cerr << "Couldn't change directory to \"" << argv[1] << "\", ERROR #" << errno << "." << endl;
 			}
 		}
+		// Otherwise, look for the given directory in the current working
+		// directory.
 		else
 		{
 			string pwd = get_current_dir_name();
@@ -371,10 +407,12 @@ void set( char **argv )
 
 void jobs()
 {
+	// Output a table heading above the list to make it look nice.
 	if( backgroundJobs.size() > 0 )
 	{
 		cout << "[JOBID]\tPID\tCOMMAND" << endl;
 	}
+	// Output the jobs.
 	for( unsigned int i = 0; i < backgroundJobs.size(); i++ )
 	{
 		cout << "[" << backgroundJobs[i].jobId << "]\t" << backgroundJobs[i].pid << "\t" << backgroundJobs[i].command << endl;
@@ -383,20 +421,21 @@ void jobs()
 
 void kill( char **argv )
 {
-	// If no PID specified, tell user what quash
-	// expects and do nothing.
+	// If no PID specified, tell user what quash expects and do nothing.
 	if( !argv[1] )
 	{
 		cerr << "Must specify process ID of process to kill." << endl;
 		return;
 	}
 
+	// Send SIGINT to be nice, letting the process clean up before terminating.
 	if( kill( atoi( argv[1] ), SIGINT ) != 0 )
 	{
 		cerr << "Couldn't kill process " << argv[1] << ", ERROR #" << errno << "." << endl;
 	}
 }
 
+// Pretty self-explanatory.
 void help()
 {
 	cout << "################################################" << endl;
@@ -432,6 +471,9 @@ void help()
 	cout << "    - Directories for PATH must be separated by colons." << endl;
 }
 
+// Returns true if any one of the commands in the command list is a shell
+// builtin like "cd" or "set", false if none of the commands in the list
+// are shell builtins.
 bool containsShellBuiltin( const std::vector<Command> & commandList )
 {
 	for( unsigned int i = 0; i < commandList.size(); i++ )

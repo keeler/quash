@@ -7,9 +7,9 @@
 
 struct Command
 {
-	std::string 	rawString;				// Command sent to Quash.
-	std::string		inputFilename;			// Input file (for redirected stdin).
-	std::string		outputFilename;			// Ouput file (for redirected stdout).
+	std::string 	rawString;				// Command sent to Quash. (e.g. "ls -al | grep e > out" is two commands, "ls -al" and "grep e > out"
+	std::string		inputFilename;			// Input file (for redirected stdin). Empty string if redirect not speficied.
+	std::string		outputFilename;			// Ouput file (for redirected stdout). Empty string if redirect not specified.
 	char			**argv;					// ARGV string to pass to execve().
 	bool			executeInBackground;	// Whether to run in background.
 
@@ -30,6 +30,7 @@ struct Command
 		outputFilename( that.outputFilename ),
 		executeInBackground( that.executeInBackground )
 	{
+		// Copy the argv array if it's not NULL.
 		if( that.argv != NULL )
 		{
 			unsigned int argc = 0;
@@ -52,6 +53,8 @@ struct Command
 
 	~Command()
 	{
+		// Only need to explicitly destroy this, all other member variables
+		// have their own destructors.
 		if( argv != NULL )
 		{
 			for( unsigned int i = 0; argv[i]; i++ )
@@ -62,6 +65,8 @@ struct Command
 		}
 	}
 
+	// Overloaded assignment operator. Makes passing Commands around possible
+	// without memory errors.
 	Command & operator=( const Command & that )
 	{
 		if( this != &that )
